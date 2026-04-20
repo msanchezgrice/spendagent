@@ -1,0 +1,1147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>AgentSpend — the audit you should have run last month</title>
+  <meta name="description" content="A local CLI that scans your codebase for AI/API waste, imports usage data, and hands you a ranked cost-savings audit. Open source. Never leaves your machine." />
+  <meta property="og:title" content="AgentSpend — the audit you should have run last month" />
+  <meta property="og:description" content="Scan your repo. Import your usage. Get a ranked list of what's bleeding money." />
+  <meta property="og:type" content="website" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23f4f0e6'/%3E%3Ctext x='50%25' y='60%25' font-family='serif' font-size='52' text-anchor='middle' fill='%231a1815'%3E%24%3C/text%3E%3C/svg%3E" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..900,0..100;1,9..144,300..900,0..100&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --paper:      #f4f0e6;
+      --paper-deep: #ece6d4;
+      --ink:        #171512;
+      --ink-soft:   #3a362f;
+      --ink-faded:  #6a6458;
+      --rule:       #171512;
+      --red:        #b8321f;
+      --red-deep:   #8d2416;
+      --green:      #2f6b2f;
+      --gold:       #a87a1e;
+      --maxw:       1200px;
+    }
+
+    *,*::before,*::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: 'Fraunces', 'Iowan Old Style', 'Georgia', serif;
+      font-variation-settings: 'opsz' 14, 'SOFT' 30;
+      font-weight: 400;
+      font-size: 17px;
+      line-height: 1.55;
+      letter-spacing: -0.005em;
+      background-image:
+        radial-gradient(rgba(23,21,18,0.055) 1px, transparent 1px),
+        radial-gradient(rgba(23,21,18,0.04) 1px, transparent 1px);
+      background-size: 24px 24px, 8px 8px;
+      background-position: 0 0, 4px 4px;
+    }
+    ::selection { background: var(--ink); color: var(--paper); }
+
+    /* ---------- Typography primitives ---------- */
+    .mono,
+    code, pre, kbd, samp {
+      font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    .caps {
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    h1, h2, h3 { margin: 0; }
+    .display {
+      font-family: 'Fraunces', serif;
+      font-variation-settings: 'opsz' 144, 'SOFT' 100;
+      font-weight: 500;
+      line-height: 0.94;
+      letter-spacing: -0.035em;
+    }
+    em.italic {
+      font-style: italic;
+      font-variation-settings: 'opsz' 144, 'SOFT' 100;
+    }
+    .under {
+      background-image: linear-gradient(transparent 60%, rgba(184,50,31,0.25) 60%);
+    }
+    .strike { text-decoration: line-through; text-decoration-color: var(--red); text-decoration-thickness: 2px; }
+
+    /* ---------- Layout primitives ---------- */
+    .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 32px; }
+    .rule  { border-top: 1px solid var(--rule); }
+    .rule-d { border-top: 3px double var(--rule); }
+
+    /* Top meta bar — a ledger header */
+    .meta {
+      border-bottom: 3px double var(--rule);
+    }
+    .meta-inner {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      padding: 10px 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--ink-soft);
+      white-space: nowrap;
+      overflow-x: auto;
+    }
+    .meta-inner .dot {
+      width: 6px; height: 6px; background: var(--ink); border-radius: 50%;
+      display: inline-block; vertical-align: middle; margin: 0 4px;
+    }
+    .meta-inner a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+
+    /* Masthead */
+    .masthead { padding: 22px 0 18px; border-bottom: 1px solid var(--rule); }
+    .masthead-inner {
+      display: flex; justify-content: space-between; align-items: baseline; gap: 24px;
+    }
+    .brand {
+      font-family: 'Fraunces', serif;
+      font-variation-settings: 'opsz' 144, 'SOFT' 0;
+      font-weight: 700;
+      font-size: clamp(34px, 4.6vw, 56px);
+      line-height: 1;
+      letter-spacing: -0.03em;
+    }
+    .brand-mark {
+      display: inline-block;
+      transform: translateY(-2px);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.5em;
+      border: 2px solid var(--ink);
+      padding: 2px 7px;
+      margin-right: 10px;
+      vertical-align: middle;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+    }
+    .masthead nav {
+      display: flex; gap: 22px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+    }
+    .masthead nav a {
+      color: var(--ink); text-decoration: none;
+      padding-bottom: 3px;
+      border-bottom: 1px solid transparent;
+    }
+    .masthead nav a:hover { border-bottom-color: var(--ink); }
+
+    /* ---------- Hero ---------- */
+    .hero {
+      padding: 72px 0 60px;
+      position: relative;
+    }
+    .hero::before {
+      /* FIG. 01 marker */
+      content: "FIG. 01 / AGENTSPEND v0.1";
+      position: absolute; top: 22px; right: 32px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; letter-spacing: 0.22em;
+      color: var(--ink-faded);
+    }
+    .kicker {
+      display: inline-block;
+      border: 1px solid var(--ink);
+      padding: 5px 10px 4px;
+      margin-bottom: 28px;
+    }
+    .headline {
+      font-size: clamp(56px, 10vw, 140px);
+      font-variation-settings: 'opsz' 144, 'SOFT' 20;
+      font-weight: 500;
+      line-height: 0.92;
+      letter-spacing: -0.045em;
+      max-width: 1050px;
+    }
+    .headline .line2 { display: block; }
+    .headline .small-word {
+      font-style: italic;
+      font-variation-settings: 'opsz' 144, 'SOFT' 100;
+      color: var(--ink-soft);
+    }
+    .headline .number {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 500;
+      font-size: 0.72em;
+      background: var(--ink);
+      color: var(--paper);
+      padding: 0.02em 0.18em;
+      letter-spacing: -0.01em;
+      margin: 0 0.05em;
+    }
+    .subhead {
+      margin-top: 38px;
+      max-width: 640px;
+      font-size: clamp(18px, 1.8vw, 21px);
+      line-height: 1.45;
+      color: var(--ink-soft);
+    }
+    .hero-actions {
+      display: flex; flex-wrap: wrap; gap: 14px; margin-top: 36px;
+    }
+    .btn {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+      padding: 14px 22px;
+      text-decoration: none;
+      border: 1.5px solid var(--ink);
+      background: var(--paper);
+      color: var(--ink);
+      cursor: pointer;
+      transition: transform 120ms ease, background 120ms ease, color 120ms ease;
+    }
+    .btn:hover { background: var(--ink); color: var(--paper); transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--ink); }
+    .btn.primary { background: var(--ink); color: var(--paper); }
+    .btn.primary:hover { background: var(--red-deep); border-color: var(--red-deep); box-shadow: 3px 3px 0 var(--ink); }
+
+    /* ---------- Copy-paste prompt card ---------- */
+    .prompt-card {
+      margin-top: 56px;
+      background: var(--ink);
+      color: var(--paper);
+      position: relative;
+      box-shadow: 6px 6px 0 var(--paper-deep), 6px 6px 0 1.5px var(--ink);
+    }
+    .prompt-head {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 18px;
+      border-bottom: 1px dashed rgba(244,240,230,0.35);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(244,240,230,0.75);
+    }
+    .prompt-head .dots { display: flex; gap: 6px; }
+    .prompt-head .dots span { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(244,240,230,0.35); }
+    .prompt-body {
+      padding: 22px 22px 18px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13.5px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .prompt-body .c { color: #7e9e84; }  /* comment green */
+    .prompt-body .k { color: #f2c94c; }  /* highlight / keyword */
+    .prompt-body .s { color: #f07858; }  /* strings */
+    .prompt-copy {
+      position: absolute; top: 48px; right: 12px;
+      background: var(--paper);
+      color: var(--ink);
+      border: 1px solid var(--paper);
+      padding: 7px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 120ms, color 120ms;
+    }
+    .prompt-copy:hover { background: var(--red); color: var(--paper); border-color: var(--red); }
+    .prompt-copy.copied { background: var(--green); color: var(--paper); border-color: var(--green); }
+
+    /* ---------- Ledger section wrappers ---------- */
+    section { padding: 86px 0; border-top: 1px solid var(--rule); }
+    section.no-rule { border-top: none; }
+    .section-head {
+      display: grid; grid-template-columns: 120px 1fr; gap: 24px;
+      margin-bottom: 48px;
+    }
+    .section-tag { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-faded); padding-top: 8px; }
+    .section-title {
+      font-size: clamp(32px, 5vw, 60px);
+      font-variation-settings: 'opsz' 144, 'SOFT' 40;
+      font-weight: 500;
+      line-height: 1;
+      letter-spacing: -0.03em;
+      max-width: 900px;
+    }
+    .section-title em { font-style: italic; color: var(--ink-soft); }
+
+    /* ---------- Leak table (the problem) ---------- */
+    .leaks {
+      display: grid; grid-template-columns: 1fr; border-top: 3px double var(--rule); border-bottom: 3px double var(--rule);
+    }
+    .leak {
+      display: grid; grid-template-columns: 70px 1fr 220px 160px;
+      gap: 20px; padding: 22px 0;
+      border-bottom: 1px solid var(--rule);
+      align-items: baseline;
+    }
+    .leak:last-child { border-bottom: none; }
+    .leak-num { font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.2em; color: var(--ink-faded); }
+    .leak-title {
+      font-size: clamp(22px, 2.4vw, 28px);
+      font-variation-settings: 'opsz' 144, 'SOFT' 30;
+      font-weight: 500;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+    .leak-title em { font-style: italic; color: var(--ink-soft); }
+    .leak-desc { color: var(--ink-soft); font-size: 15px; line-height: 1.5; }
+    .leak-cost {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      text-align: right;
+      color: var(--red-deep);
+      font-weight: 500;
+      position: relative;
+    }
+    .leak-cost .pencil {
+      display: inline-block; transform: rotate(-6deg);
+      border: 2px solid var(--red);
+      padding: 4px 10px;
+      border-radius: 30px / 50%;
+      background: rgba(184,50,31,0.06);
+      color: var(--red-deep);
+      font-weight: 700;
+    }
+
+    /* ---------- 4-step how-it-works ---------- */
+    .steps {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+      border: 1px solid var(--rule);
+      background: var(--paper-deep);
+    }
+    .step {
+      padding: 28px 24px 32px;
+      background: var(--paper);
+      border-right: 1px solid var(--rule);
+      position: relative;
+    }
+    .step:last-child { border-right: none; }
+    .step-n {
+      font-family: 'Fraunces', serif;
+      font-variation-settings: 'opsz' 144, 'SOFT' 0;
+      font-weight: 700;
+      font-size: 72px; line-height: 1;
+      color: var(--ink);
+      margin-bottom: 18px;
+      letter-spacing: -0.05em;
+    }
+    .step-n sup { font-size: 0.3em; vertical-align: super; color: var(--ink-faded); margin-left: 4px; letter-spacing: 0; }
+    .step-title {
+      font-size: 22px;
+      font-variation-settings: 'opsz' 144, 'SOFT' 30;
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+    .step-body { color: var(--ink-soft); font-size: 15px; line-height: 1.55; }
+    .step-cmd {
+      display: block;
+      margin-top: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      background: var(--ink);
+      color: var(--paper);
+      padding: 8px 10px;
+      white-space: nowrap;
+      overflow-x: auto;
+    }
+
+    /* ---------- Catches grid ---------- */
+    .catches {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border: 1px solid var(--rule);
+      background: var(--paper);
+    }
+    .catch {
+      padding: 26px 22px;
+      border-right: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+    }
+    .catch:nth-child(4n) { border-right: none; }
+    .catch:nth-last-child(-n+4) { border-bottom: none; }
+    .catch .n {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--red-deep);
+      margin-bottom: 14px;
+    }
+    .catch h4 {
+      font-family: 'Fraunces', serif;
+      font-variation-settings: 'opsz' 144, 'SOFT' 20;
+      font-weight: 500;
+      font-size: 20px;
+      line-height: 1.2;
+      margin: 0 0 8px;
+      letter-spacing: -0.02em;
+    }
+    .catch p { margin: 0; font-size: 14px; color: var(--ink-soft); line-height: 1.5; }
+
+    /* ---------- Sample report ---------- */
+    .report-wrap { display: grid; grid-template-columns: 1.2fr 1fr; gap: 32px; align-items: start; }
+    .report-paper {
+      background: var(--paper);
+      border: 1px solid var(--rule);
+      position: relative;
+      box-shadow: 10px 10px 0 -1px var(--paper-deep), 10px 10px 0 var(--ink);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13.5px;
+      line-height: 1.6;
+      padding: 28px 26px 30px;
+      transform: rotate(-0.5deg);
+    }
+    .report-paper h3 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin: 0 0 4px;
+    }
+    .report-paper .sub {
+      color: var(--ink-faded);
+      margin-bottom: 18px;
+      font-size: 12px;
+    }
+    .report-paper pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      color: var(--ink-soft);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+    .report-paper .h1 { color: var(--ink); font-weight: 700; }
+    .report-paper .hl { background: rgba(255,221,87,0.55); padding: 0 3px; color: var(--ink); font-weight: 500; }
+    .report-paper .neg { color: var(--red-deep); font-weight: 500; }
+    .report-paper .pos { color: var(--green); font-weight: 500; }
+    .stamp {
+      position: absolute; top: 18px; right: -20px;
+      border: 3px solid var(--red);
+      color: var(--red);
+      padding: 6px 14px 7px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.28em;
+      transform: rotate(9deg);
+      font-weight: 700;
+      background: rgba(184,50,31,0.06);
+    }
+    .report-notes {
+      font-size: 16px;
+      color: var(--ink-soft);
+      line-height: 1.55;
+    }
+    .report-notes ul {
+      list-style: none; padding: 0; margin: 20px 0 0;
+    }
+    .report-notes li {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--rule);
+      display: grid;
+      grid-template-columns: 24px 1fr;
+      gap: 14px;
+    }
+    .report-notes li::before {
+      content: "—";
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--red);
+      font-weight: 700;
+    }
+
+    /* ---------- Install / agent prompts ---------- */
+    .installs {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 28px;
+    }
+    .install-card {
+      border: 1px solid var(--rule);
+      padding: 30px 28px;
+      background: var(--paper);
+    }
+    .install-card h3 {
+      font-size: 26px;
+      font-variation-settings: 'opsz' 144, 'SOFT' 40;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+    .install-card p.lede { color: var(--ink-soft); margin: 0 0 20px; font-size: 15px; line-height: 1.55; }
+
+    .codebox {
+      background: var(--ink); color: var(--paper);
+      padding: 18px 20px 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px; line-height: 1.7;
+      position: relative;
+      white-space: pre-wrap;
+    }
+    .codebox .c { color: #7e9e84; }
+    .codebox .k { color: #f2c94c; }
+    .codebox-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--ink-faded);
+      margin-bottom: 8px;
+    }
+    .copybtn {
+      position: absolute; top: 10px; right: 10px;
+      background: var(--paper); color: var(--ink);
+      border: 1px solid var(--paper);
+      padding: 5px 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+      cursor: pointer;
+    }
+    .copybtn:hover { background: var(--red); color: var(--paper); border-color: var(--red); }
+    .copybtn.copied { background: var(--green); color: var(--paper); border-color: var(--green); }
+
+    .steps-mini {
+      margin-top: 18px; padding-left: 0; list-style: none; counter-reset: mini;
+      font-size: 14px; color: var(--ink-soft);
+    }
+    .steps-mini li {
+      counter-increment: mini;
+      padding: 8px 0 8px 32px;
+      position: relative;
+      border-bottom: 1px dotted rgba(23,21,18,0.25);
+    }
+    .steps-mini li:last-child { border-bottom: none; }
+    .steps-mini li::before {
+      content: counter(mini,decimal-leading-zero) ".";
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; letter-spacing: 0.16em;
+      color: var(--red-deep); font-weight: 700;
+      position: absolute; left: 0; top: 10px;
+    }
+
+    /* ---------- Pricing ---------- */
+    .price-wrap {
+      display: grid; grid-template-columns: 1fr 2fr; gap: 40px; align-items: center;
+    }
+    .price-big {
+      font-family: 'Fraunces', serif;
+      font-variation-settings: 'opsz' 144, 'SOFT' 0;
+      font-weight: 700;
+      font-size: clamp(120px, 16vw, 220px);
+      line-height: 0.9;
+      letter-spacing: -0.06em;
+    }
+    .price-big small {
+      display: block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px; letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink-faded);
+      margin-top: 14px;
+      font-weight: 400;
+    }
+    .price-list {
+      list-style: none; padding: 0; margin: 0;
+      border-top: 3px double var(--rule);
+    }
+    .price-list li {
+      display: grid;
+      grid-template-columns: 22px 1fr auto;
+      gap: 18px;
+      padding: 14px 2px;
+      border-bottom: 1px solid var(--rule);
+      font-size: 17px;
+      align-items: baseline;
+    }
+    .price-list li:last-child { border-bottom: 3px double var(--rule); }
+    .price-list .check {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--green);
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .price-list .tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--ink-faded);
+    }
+
+    /* ---------- Final CTA ---------- */
+    .final {
+      background: var(--ink);
+      color: var(--paper);
+      border-top: 3px double var(--ink);
+    }
+    .final .wrap { padding-top: 80px; padding-bottom: 90px; }
+    .final .kicker { border-color: var(--paper); color: var(--paper); }
+    .final .final-title {
+      font-size: clamp(42px, 6vw, 84px);
+      font-variation-settings: 'opsz' 144, 'SOFT' 60;
+      font-weight: 500;
+      line-height: 0.98;
+      letter-spacing: -0.035em;
+      max-width: 880px;
+    }
+    .final .final-title em { font-style: italic; color: rgba(244,240,230,0.75); }
+    .final .hero-actions .btn { background: var(--paper); color: var(--ink); border-color: var(--paper); }
+    .final .hero-actions .btn:hover { background: var(--red); color: var(--paper); border-color: var(--red); box-shadow: 3px 3px 0 var(--paper); }
+    .final .hero-actions .btn.primary { background: transparent; color: var(--paper); }
+    .final .hero-actions .btn.primary:hover { background: var(--paper); color: var(--ink); }
+
+    /* ---------- Footer ---------- */
+    footer {
+      padding: 30px 0 40px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink-faded);
+    }
+    footer .foot-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+    footer a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+
+    /* ---------- Entrance animation ---------- */
+    .reveal { opacity: 0; transform: translateY(10px); transition: opacity 600ms ease, transform 600ms ease; }
+    .reveal.on { opacity: 1; transform: none; }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 1000px) {
+      .steps { grid-template-columns: repeat(2, 1fr); }
+      .step:nth-child(2) { border-right: none; }
+      .step:nth-child(-n+2) { border-bottom: 1px solid var(--rule); }
+      .catches { grid-template-columns: repeat(2, 1fr); }
+      .catch:nth-child(4n) { border-right: 1px solid var(--rule); }
+      .catch:nth-child(2n) { border-right: none; }
+      .catch:nth-last-child(-n+4) { border-bottom: 1px solid var(--rule); }
+      .catch:nth-last-child(-n+2) { border-bottom: none; }
+      .leak { grid-template-columns: 48px 1fr; }
+      .leak-cost, .leak-desc { grid-column: 2 / 3; }
+      .leak-cost { text-align: left; margin-top: 6px; }
+      .installs { grid-template-columns: 1fr; }
+      .report-wrap { grid-template-columns: 1fr; }
+      .price-wrap { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .wrap { padding: 0 18px; }
+      section { padding: 60px 0; }
+      .hero { padding: 46px 0 36px; }
+      .hero::before { display: none; }
+      .masthead nav { display: none; }
+      .section-head { grid-template-columns: 1fr; gap: 8px; margin-bottom: 28px; }
+      .steps { grid-template-columns: 1fr; }
+      .step { border-right: none; border-bottom: 1px solid var(--rule); }
+      .step:last-child { border-bottom: none; }
+      .catches { grid-template-columns: 1fr; }
+      .catch { border-right: none; border-bottom: 1px solid var(--rule); }
+      .catch:last-child { border-bottom: none; }
+      .report-paper { transform: none; }
+      .stamp { right: 10px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+      * { scroll-behavior: auto !important; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ============================== METADATA BAR ============================== -->
+  <div class="meta">
+    <div class="wrap meta-inner">
+      <span>THE AGENTSPEND LEDGER</span>
+      <span class="dot"></span>
+      <span>VOL. 01 · ISSUE 01</span>
+      <span class="dot"></span>
+      <span>LOCAL · OPEN SOURCE · MIT</span>
+      <span class="dot"></span>
+      <span>CLI v0.1.0</span>
+      <span class="dot"></span>
+      <span><a href="https://github.com/msanchezgrice/spendagent" target="_blank" rel="noopener">→ GITHUB</a></span>
+    </div>
+  </div>
+
+  <!-- ============================== MASTHEAD ============================== -->
+  <header class="masthead">
+    <div class="wrap masthead-inner">
+      <div class="brand"><span class="brand-mark">$</span>AgentSpend</div>
+      <nav>
+        <a href="#leak">The Leak</a>
+        <a href="#audit">The Audit</a>
+        <a href="#catches">What It Catches</a>
+        <a href="#install">Install</a>
+        <a href="#price">Price</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ============================== HERO ============================== -->
+  <section class="hero no-rule">
+    <div class="wrap">
+      <div class="kicker caps reveal">A local CLI cost auditor for AI / API spend</div>
+      <h1 class="headline display reveal">
+        Find the <em class="italic">expensive</em>
+        <span class="line2">line of code.</span>
+      </h1>
+      <p class="subhead reveal">
+        AgentSpend scans your repo for every OpenAI, Anthropic, Gemini, LiteLLM, LangChain, Vercel&nbsp;AI, LlamaIndex and embedding callsite — then ties it to your actual usage data and ranks what to cut. No dashboards. No uploads. Just <span class="under">one Markdown report</span> that tells you where the money goes.
+      </p>
+
+      <div class="hero-actions reveal">
+        <a class="btn primary" href="#install">Install in 60 seconds →</a>
+        <a class="btn" href="https://github.com/msanchezgrice/spendagent" target="_blank" rel="noopener">View on GitHub</a>
+      </div>
+
+      <!-- Copy-paste prompt card -->
+      <div class="prompt-card reveal" id="hero-prompt">
+        <div class="prompt-head">
+          <span>PASTE INTO CLAUDE CODE · CURSOR · CODEX · OR ANY CODING AGENT</span>
+          <span class="dots" aria-hidden="true"><span></span><span></span><span></span></span>
+        </div>
+<pre class="prompt-body" data-copy="hero"><span class="c"># Audit this repository for AI / API cost waste.</span>
+
+Install AgentSpend and run a full audit on this repo:
+
+  <span class="k">npx -y github:msanchezgrice/spendagent init</span>   <span class="c">--repo .</span>
+  <span class="k">npx -y github:msanchezgrice/spendagent doctor</span> <span class="c">--repo .</span>
+
+<span class="c"># If I have a usage export (OpenAI console / Anthropic / LiteLLM),
+# also run:</span>
+
+  <span class="k">npx -y github:msanchezgrice/spendagent doctor</span> <span class="c">--repo . --usage ./usage.csv</span>
+
+Then read <span class="s">.agentspend/AGENT_SPEND_REPORT.md</span> and summarize the
+top three savings opportunities. For each one give me:
+
+  1. which file + line to change
+  2. the estimated monthly saving range
+  3. the smallest safe patch I can ship today
+
+Do not upload the repo or the usage file anywhere. Local only.</pre>
+        <button class="prompt-copy" data-copy-target="hero">Copy</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== PROBLEM / THE LEAK ============================== -->
+  <section id="leak">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="section-tag">§01 / THE LEAK</div>
+        <h2 class="section-title display">
+          Your AI bill is a crime scene. <em>You can&rsquo;t see the blood.</em>
+        </h2>
+      </div>
+
+      <div class="leaks reveal">
+        <div class="leak">
+          <div class="leak-num">01 /</div>
+          <div>
+            <div class="leak-title">A <em>premium</em> model classifies leads that Haiku would handle fine.</div>
+            <div class="leak-desc">You wrote <code class="mono">classifyLead()</code> at 2am with <code class="mono">gpt-4o</code> because it was default. The traffic grew. Nobody revisited the choice.</div>
+          </div>
+          <div class="leak-desc mono">gpt-4o &nbsp;·&nbsp; 500k&nbsp;req / mo</div>
+          <div class="leak-cost"><span class="pencil">~$288 / mo</span></div>
+        </div>
+
+        <div class="leak">
+          <div class="leak-num">02 /</div>
+          <div>
+            <div class="leak-title">The same deterministic prompt is billed <em>every single call.</em></div>
+            <div class="leak-desc">No cache. No prompt caching. No input hash. The same 1,200-token system message rides along on every single request.</div>
+          </div>
+          <div class="leak-desc mono">no&nbsp;cache &nbsp;·&nbsp; temp&nbsp;0</div>
+          <div class="leak-cost"><span class="pencil">~$96 / mo</span></div>
+        </div>
+
+        <div class="leak">
+          <div class="leak-num">03 /</div>
+          <div>
+            <div class="leak-title">A nightly cron re-embeds documents that <em>have not changed in weeks.</em></div>
+            <div class="leak-desc">The embedding call lives inside a <code class="mono">for chunk of chunks</code> loop. No content hash, no persistence, no batch API.</div>
+          </div>
+          <div class="leak-desc mono">embedding &nbsp;·&nbsp; in&nbsp;loop</div>
+          <div class="leak-cost"><span class="pencil">~$72 / mo</span></div>
+        </div>
+
+        <div class="leak">
+          <div class="leak-num">04 /</div>
+          <div>
+            <div class="leak-title"><code class="mono">CLAUDE.md</code> is 14,000 tokens. Every agent run pays for it.</div>
+            <div class="leak-desc">Global agent context keeps growing. The coding agent silently pays the toll on every session.</div>
+          </div>
+          <div class="leak-desc mono">agent&nbsp;config &nbsp;·&nbsp; 14k&nbsp;tok</div>
+          <div class="leak-cost"><span class="pencil">~$41 / mo</span></div>
+        </div>
+      </div>
+
+      <p style="margin-top:26px;font-size:14px;color:var(--ink-faded);font-family:'JetBrains Mono',monospace;letter-spacing:0.08em;">
+        FIG. 02 — ILLUSTRATIVE LEAK PROFILE. YOUR NUMBERS WILL DIFFER. ALL COSTS DIRECTIONAL UNTIL USAGE DATA IS IMPORTED.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================== HOW IT WORKS / THE AUDIT ============================== -->
+  <section id="audit">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="section-tag">§02 / THE AUDIT</div>
+        <h2 class="section-title display">
+          Four steps. One Markdown verdict.
+          <em>No dashboards. No uploads.</em>
+        </h2>
+      </div>
+
+      <div class="steps reveal">
+        <div class="step">
+          <div class="step-n">01<sup>✧</sup></div>
+          <div class="step-title">Walk the repo.</div>
+          <div class="step-body">Regex + heuristics find every LLM callsite in TS, JS, and Python — OpenAI, Anthropic, Gemini, LiteLLM, Vercel AI, LangChain, LlamaIndex, embeddings. <code class="mono">.gitignore</code> is respected.</div>
+          <code class="step-cmd">$ agentspend scan --repo .</code>
+        </div>
+        <div class="step">
+          <div class="step-n">02</div>
+          <div class="step-title">Import your usage.</div>
+          <div class="step-body">A plain CSV: provider, model, input_tokens, output_tokens. Optional route, feature, cost_usd. If you have it, we use it; if not, we show scenario estimates.</div>
+          <code class="step-cmd">$ agentspend import-usage usage.csv</code>
+        </div>
+        <div class="step">
+          <div class="step-n">03</div>
+          <div class="step-title">Match code to money.</div>
+          <div class="step-body">We map each usage row back to a callsite by route, feature, model, and filename — with explicit high / medium / low mapping confidence, never guessed dollars.</div>
+          <code class="step-cmd">$ agentspend analyze</code>
+        </div>
+        <div class="step">
+          <div class="step-n">04</div>
+          <div class="step-title">Read the verdict.</div>
+          <div class="step-body">A ranked list of findings with estimated savings, effort, risk, alternatives, and a small safe patch plan — written to <code class="mono">.agentspend/AGENT_SPEND_REPORT.md</code>.</div>
+          <code class="step-cmd">$ agentspend report</code>
+        </div>
+      </div>
+
+      <p style="margin-top:26px;font-size:14px;color:var(--ink-faded);font-family:'JetBrains Mono',monospace;letter-spacing:0.08em;">
+        OR RUN THE WHOLE PIPELINE AT ONCE: <code style="color:var(--ink);">$ agentspend doctor --repo . --usage ./usage.csv</code>
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================== SAMPLE REPORT ============================== -->
+  <section>
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="section-tag">§03 / THE REPORT</div>
+        <h2 class="section-title display">
+          Markdown. Version-controlled. <em>Readable by a human at 10pm.</em>
+        </h2>
+      </div>
+
+      <div class="report-wrap">
+        <div class="report-paper reveal">
+          <div class="stamp">CONFIDENTIAL</div>
+          <h3>AgentSpend Report</h3>
+          <div class="sub">Generated 2026-04-20 &middot; /repo/acme &middot; mode: static-and-usage</div>
+<pre><span class="h1">## Summary</span>
+
+Detected:
+  14 LLM call sites
+   3 embedding call sites
+   2 vector DB integrations
+   5 agent/config files
+
+Estimated current monthly AI spend: <span class="neg">$1,246</span>
+Estimated potential savings: <span class="pos">$412 – $695 / mo</span>
+
+<span class="h1">## Top Recommendations</span>
+
+<span class="hl">### F001: Premium model used for likely classification route</span>
+
+  category: <span class="mono">model_switch</span>
+  severity: <span class="neg">high</span>
+  est. savings: <span class="pos">$288 / mo</span>
+  confidence:  <span class="pos">high</span>    effort: hours    risk: medium
+
+Evidence:
+  - src/api/classifyLead.ts:42
+  - Model: claude-3-5-sonnet-latest
+  - Task hint: classification
+  - Route mapped from usage: api/classifyLead
+
+Suggested alternatives:
+  1. anthropic/claude-3-5-haiku   — est. $42/mo, saves $246/mo
+  2. openai/gpt-4o-mini           — est. $58/mo, saves $230/mo
+  3. gemini/gemini-1.5-flash      — est. $38/mo, saves $250/mo
+
+Patch plan:
+  - Add src/ai/modelRouter.ts
+  - Route classification → haiku, fallback → sonnet
+  - Add feature tag: classify_lead
+  - Eval 50–200 samples before rollout
+</pre>
+        </div>
+
+        <div class="report-notes reveal">
+          <p>You get exactly what a senior engineer would hand you after a day of digging — the file, the line, the model, the dollar figure, the alternative, the smallest safe change, and the confidence behind every number.</p>
+          <ul>
+            <li><strong>Always ranked by savings</strong>, not severity. The first finding pays for the next hour of your work.</li>
+            <li><strong>Confidence is explicit.</strong> Less than 14 days of usage? Savings auto-downgrade to medium. Less than 7? Low. No lying with short windows.</li>
+            <li><strong>No upload, no telemetry.</strong> The report is local Markdown. Commit it, share it, delete it. Your call.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== WHAT IT CATCHES ============================== -->
+  <section id="catches">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="section-tag">§04 / WASTE PATTERNS</div>
+        <h2 class="section-title display">
+          Eight patterns. <em>All of them are in your repo.</em>
+        </h2>
+      </div>
+
+      <div class="catches reveal">
+        <div class="catch">
+          <div class="n">/ 01 Model Switch</div>
+          <h4>Premium model on simple task</h4>
+          <p>Sonnet, Opus, gpt-4o, o1 used for classification, extraction, or summarization routes where cheaper alternatives exist.</p>
+        </div>
+        <div class="catch">
+          <div class="n">/ 02 Prompt Cache</div>
+          <h4>No cache on deterministic calls</h4>
+          <p>Temperature 0, repeated inputs, identical system prompts — paid for on every request.</p>
+        </div>
+        <div class="catch">
+          <div class="n">/ 03 Fanout</div>
+          <h4>LLM call inside a loop</h4>
+          <p><code class="mono">for</code>, <code class="mono">.map</code>, <code class="mono">Promise.all</code>, list comprehensions — multiplied by N inputs with no batching.</p>
+        </div>
+        <div class="catch">
+          <div class="n">/ 04 Embeddings</div>
+          <h4>Embedding recomputation</h4>
+          <p>Embed-in-loop with no persistence, no content hashing, no batch API.</p>
+        </div>
+        <div class="catch">
+          <div class="n">/ 05 Batching</div>
+          <h4>Background jobs at realtime prices</h4>
+          <p>Calls in <code class="mono">jobs/</code>, <code class="mono">cron/</code>, <code class="mono">workers/</code>, <code class="mono">scripts/</code> — batch API is ~50% cheaper.</p>
+        </div>
+        <div class="catch">
+          <div class="n">/ 06 Context Bloat</div>
+          <h4>Large global agent context</h4>
+          <p><code class="mono">CLAUDE.md</code>, <code class="mono">AGENTS.md</code>, <code class="mono">.cursor/rules/</code> — if it&rsquo;s &gt;4k tokens, every session pays the toll.</p>
+        </div>
+        <div class="catch">
+          <div class="n">/ 07 Agent Tooling</div>
+          <h4>MCP server sprawl</h4>
+          <p>Many MCP servers configured. Every tool description rides in context by default.</p>
+        </div>
+        <div class="catch">
+          <div class="n">/ 08 Telemetry</div>
+          <h4>Missing feature tags</h4>
+          <p>No <code class="mono">metadata</code>, <code class="mono">user</code>, or <code class="mono">tags</code> on calls. Future spend will be impossible to attribute.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== INSTALL / AGENT PROMPT ============================== -->
+  <section id="install">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="section-tag">§05 / INSTALL</div>
+        <h2 class="section-title display">
+          Paste a prompt. <em>Or type three commands.</em>
+        </h2>
+      </div>
+
+      <div class="installs">
+
+        <!-- AGENT PROMPT -->
+        <div class="install-card reveal">
+          <h3>For your coding agent</h3>
+          <p class="lede">Paste this into Claude Code, Cursor, Codex, OpenCode, or any agent that can run shell commands. It will install, audit, and summarize without leaving your terminal.</p>
+
+          <div class="codebox-label">COPY &rarr; PASTE</div>
+          <div class="codebox">
+            <button class="copybtn" data-copy-target="agent">Copy</button>
+<pre data-copy="agent"><span class="c"># Audit this repo for AI / API cost waste.</span>
+
+Run:
+
+  <span class="k">npx -y github:msanchezgrice/spendagent init</span> --repo .
+  <span class="k">npx -y github:msanchezgrice/spendagent doctor</span> --repo .
+
+<span class="c"># If I have a usage.csv, also run:
+#   npx -y github:msanchezgrice/spendagent doctor --repo . --usage ./usage.csv</span>
+
+Then read <span class="k">.agentspend/AGENT_SPEND_REPORT.md</span> and give me:
+
+  1. the three findings with the highest estimated savings
+  2. for each: file + line, current model, cheapest safe alternative
+  3. the smallest patch I can ship today for the top one
+
+Do not upload the repo or usage data anywhere. Local only.</pre>
+          </div>
+
+          <ol class="steps-mini">
+            <li>Paste into your coding agent.</li>
+            <li>Agent runs the CLI and reads the report.</li>
+            <li>You get a ranked list of savings and a one-hour patch.</li>
+          </ol>
+        </div>
+
+        <!-- MANUAL INSTALL -->
+        <div class="install-card reveal">
+          <h3>For your terminal</h3>
+          <p class="lede">Clone, build, run. Three commands, no account, no keys, nothing leaves your machine.</p>
+
+          <div class="codebox-label">IN YOUR REPO</div>
+          <div class="codebox">
+            <button class="copybtn" data-copy-target="manual">Copy</button>
+<pre data-copy="manual"><span class="c"># Clone + build (once):</span>
+git clone https://github.com/msanchezgrice/spendagent.git
+cd spendagent && npm install && npm run build
+npm link   <span class="c"># exposes `agentspend` globally</span>
+
+<span class="c"># From any repo you want to audit:</span>
+cd ~/my-app
+agentspend init
+agentspend doctor --repo .
+
+<span class="c"># With real usage data for dollar figures:</span>
+agentspend doctor --repo . --usage ./usage.csv
+
+open .agentspend/AGENT_SPEND_REPORT.md</pre>
+          </div>
+
+          <ol class="steps-mini">
+            <li><code class="mono">init</code> writes <code class="mono">.agentspend/</code> with config + pricing catalog.</li>
+            <li><code class="mono">doctor</code> runs scan + analyze + report.</li>
+            <li>Open the Markdown report. The first finding usually pays for the week.</li>
+          </ol>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== PRICING ============================== -->
+  <section id="price">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="section-tag">§06 / PRICE</div>
+        <h2 class="section-title display">
+          It is free. <em>It stays free.</em>
+        </h2>
+      </div>
+
+      <div class="price-wrap reveal">
+        <div class="price-big">
+          $0<small>— MIT License —</small>
+        </div>
+        <ul class="price-list">
+          <li><span class="check">✓</span><span>Full repo scan — TS, JS, Python</span><span class="tag">included</span></li>
+          <li><span class="check">✓</span><span>OpenAI · Anthropic · Gemini · LiteLLM · Vercel AI · LangChain · LlamaIndex detectors</span><span class="tag">included</span></li>
+          <li><span class="check">✓</span><span>Generic usage CSV import with provider / route / feature mapping</span><span class="tag">included</span></li>
+          <li><span class="check">✓</span><span>Markdown + JSON audit report with ranked findings</span><span class="tag">included</span></li>
+          <li><span class="check">✓</span><span>Agent-config inspection (CLAUDE.md, AGENTS.md, .cursor/rules, MCP)</span><span class="tag">included</span></li>
+          <li><span class="check">✓</span><span>Hardware / self-hosting break-even estimator</span><span class="tag">included</span></li>
+          <li><span class="check">✓</span><span><code class="mono">SKILL.md</code> wrapper for Claude, Codex, Cursor</span><span class="tag">included</span></li>
+          <li><span class="check">✓</span><span>Local-only. No upload. No telemetry. No account.</span><span class="tag">forever</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== FINAL CTA ============================== -->
+  <section class="final no-rule">
+    <div class="wrap">
+      <div class="kicker caps reveal">THE AUDIT YOU SHOULD HAVE RUN LAST MONTH</div>
+      <h2 class="final-title display reveal">
+        Stop paying frontier prices <em>for classification.</em>
+        Run the audit.
+      </h2>
+      <div class="hero-actions reveal" style="margin-top:36px;">
+        <a class="btn" href="https://github.com/msanchezgrice/spendagent" target="_blank" rel="noopener">github.com/msanchezgrice/spendagent →</a>
+        <a class="btn primary" href="#install">Copy the agent prompt</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== FOOTER ============================== -->
+  <footer>
+    <div class="wrap foot-row">
+      <div>AGENTSPEND · MIT · LOCAL · OPEN SOURCE</div>
+      <div>
+        <a href="https://github.com/msanchezgrice/spendagent" target="_blank" rel="noopener">GitHub</a> ·
+        <a href="https://github.com/msanchezgrice/spendagent/blob/main/README.md" target="_blank" rel="noopener">Docs</a> ·
+        <a href="https://github.com/msanchezgrice/spendagent/blob/main/MVP.md" target="_blank" rel="noopener">Spec</a>
+      </div>
+      <div>REVIEW PRICING BEFORE FINANCIAL DECISIONS.</div>
+    </div>
+  </footer>
+
+  <script>
+    /* --------- Copy buttons --------- */
+    function setCopyHandlers() {
+      document.querySelectorAll('[data-copy-target]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var targetKey = btn.getAttribute('data-copy-target');
+          var node = document.querySelector('[data-copy="' + targetKey + '"]');
+          if (!node) return;
+          var text = node.innerText.trim();
+          navigator.clipboard.writeText(text).then(function () {
+            var prev = btn.textContent;
+            btn.textContent = 'Copied';
+            btn.classList.add('copied');
+            setTimeout(function () {
+              btn.textContent = prev;
+              btn.classList.remove('copied');
+            }, 1400);
+          });
+        });
+      });
+    }
+
+    /* --------- Intersection reveal --------- */
+    function setReveal() {
+      var els = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) {
+        els.forEach(function (el) { el.classList.add('on'); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            e.target.classList.add('on');
+            io.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.12 });
+      els.forEach(function (el) { io.observe(el); });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      setCopyHandlers();
+      setReveal();
+      /* Stagger hero reveal */
+      document.querySelectorAll('.hero .reveal').forEach(function (el, i) {
+        setTimeout(function () { el.classList.add('on'); }, 80 + i * 110);
+      });
+    });
+  </script>
+
+</body>
+</html>
