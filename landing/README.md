@@ -2,6 +2,8 @@
 
 Standalone, zero-build, single-file landing page for AgentSpend.
 
+**Live:** [agentspend.vercel.app](https://agentspend.vercel.app)
+
 ## Preview locally
 
 ```bash

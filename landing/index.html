@@ -215,43 +215,97 @@
     .btn.primary { background: var(--ink); color: var(--paper); }
     .btn.primary:hover { background: var(--red-deep); border-color: var(--red-deep); box-shadow: 3px 3px 0 var(--ink); }
 
-    /* ---------- Copy-paste prompt card ---------- */
+    /* ---------- Hero prompt card (speech-bubble, NOT a terminal) ---------- */
     .prompt-card {
       margin-top: 56px;
-      background: var(--ink);
-      color: var(--paper);
+      background: var(--paper);
+      color: var(--ink);
       position: relative;
-      box-shadow: 6px 6px 0 var(--paper-deep), 6px 6px 0 1.5px var(--ink);
+      border: 1.5px solid var(--ink);
+      box-shadow: 10px 10px 0 -1px var(--paper-deep), 10px 10px 0 var(--ink);
+    }
+    /* Big diagonal warning tape across the top */
+    .prompt-warn {
+      background: var(--red);
+      color: var(--paper);
+      padding: 10px 18px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border-bottom: 2px solid var(--ink);
+    }
+    .prompt-warn .pill {
+      background: var(--paper);
+      color: var(--red-deep);
+      padding: 3px 8px;
+      letter-spacing: 0.16em;
+      font-size: 10px;
+      border-radius: 2px;
+      font-weight: 700;
     }
     .prompt-head {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 12px 18px;
-      border-bottom: 1px dashed rgba(244,240,230,0.35);
+      padding: 10px 18px;
       font-family: 'JetBrains Mono', monospace;
       font-size: 11px;
       letter-spacing: 0.18em;
       text-transform: uppercase;
-      color: rgba(244,240,230,0.75);
+      color: var(--ink-faded);
+      border-bottom: 1px dashed rgba(23,21,18,0.2);
     }
-    .prompt-head .dots { display: flex; gap: 6px; }
-    .prompt-head .dots span { width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(244,240,230,0.35); }
+    .prompt-head .quotes {
+      font-family: 'Fraunces', serif;
+      font-size: 28px;
+      line-height: 1;
+      color: var(--ink);
+      font-weight: 500;
+      opacity: 0.4;
+    }
     .prompt-body {
-      padding: 22px 22px 18px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13.5px;
-      line-height: 1.7;
+      padding: 28px 28px 22px;
+      font-family: 'Fraunces', serif;
+      font-variation-settings: 'opsz' 14, 'SOFT' 80;
+      font-size: 17.5px;
+      line-height: 1.55;
+      color: var(--ink);
       white-space: pre-wrap;
       word-wrap: break-word;
     }
-    .prompt-body .c { color: #7e9e84; }  /* comment green */
-    .prompt-body .k { color: #f2c94c; }  /* highlight / keyword */
-    .prompt-body .s { color: #f07858; }  /* strings */
-    .prompt-copy {
-      position: absolute; top: 48px; right: 12px;
-      background: var(--paper);
+    .prompt-body code {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--paper-deep);
+      border: 1px solid rgba(23,21,18,0.15);
       color: var(--ink);
-      border: 1px solid var(--paper);
-      padding: 7px 12px;
+      font-size: 13px;
+      padding: 1px 6px;
+      border-radius: 2px;
+      letter-spacing: 0;
+      white-space: pre;
+    }
+    .prompt-body .cmd-block {
+      display: block;
+      background: var(--ink);
+      color: var(--paper);
+      padding: 10px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      margin: 10px 0;
+      white-space: pre-wrap;
+      border: none;
+      border-radius: 0;
+    }
+    .prompt-copy {
+      position: absolute; top: 54px; right: 14px;
+      background: var(--ink);
+      color: var(--paper);
+      border: 1.5px solid var(--ink);
+      padding: 8px 14px;
       font-family: 'JetBrains Mono', monospace;
       font-size: 11px;
       letter-spacing: 0.16em;
@@ -261,6 +315,58 @@
     }
     .prompt-copy:hover { background: var(--red); color: var(--paper); border-color: var(--red); }
     .prompt-copy.copied { background: var(--green); color: var(--paper); border-color: var(--green); }
+
+    /* ---------- Shell-shortcut block (for terminal users) ---------- */
+    .shell-shortcut {
+      margin-top: 22px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: stretch;
+      border: 1px solid var(--ink);
+      background: var(--paper-deep);
+    }
+    .shell-shortcut-label {
+      background: var(--ink);
+      color: var(--paper);
+      padding: 12px 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      align-self: stretch;
+      display: flex;
+      align-items: center;
+    }
+    .shell-shortcut-cmd {
+      padding: 10px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      overflow-x: auto;
+      color: var(--ink);
+      white-space: pre;
+    }
+    .shell-shortcut-cmd .prompt {
+      color: var(--red-deep);
+      user-select: none;
+      margin-right: 6px;
+    }
+    .shell-shortcut-copy {
+      background: var(--paper);
+      border: none;
+      border-left: 1px solid var(--ink);
+      padding: 0 18px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      cursor: pointer;
+      color: var(--ink);
+      transition: background 120ms, color 120ms;
+    }
+    .shell-shortcut-copy:hover { background: var(--ink); color: var(--paper); }
+    .shell-shortcut-copy.copied { background: var(--green); color: var(--paper); }
 
     /* ---------- Ledger section wrappers ---------- */
     section { padding: 86px 0; border-top: 1px solid var(--rule); }
@@ -702,37 +808,41 @@
         <a class="btn" href="https://github.com/msanchezgrice/spendagent" target="_blank" rel="noopener">View on GitHub</a>
       </div>
 
-      <!-- Copy-paste prompt card -->
+      <!-- Copy-paste prompt card — for coding agents only -->
       <div class="prompt-card reveal" id="hero-prompt">
-        <div class="prompt-head">
-          <span>PASTE INTO THE CHAT BOX OF A CODING AGENT — NOT YOUR SHELL</span>
-          <span class="dots" aria-hidden="true"><span></span><span></span><span></span></span>
+        <div class="prompt-warn">
+          <span class="pill">★ Note</span>
+          <span>This is a message for your coding agent — not a shell command</span>
         </div>
-<pre class="prompt-body" data-copy="hero"><span class="c"># Audit this repository for AI / API cost waste.</span>
+        <div class="prompt-head">
+          <span>Paste into Claude Code · Cursor · Codex · Aider · Continue</span>
+          <span class="quotes">&ldquo;&rdquo;</span>
+        </div>
+<div class="prompt-body" data-copy="hero">Audit this repo for AI / API cost waste. Run the two commands below in the project root:
 
-Install AgentSpend and run a full audit on this repo:
+<span class="cmd-block">npx -y github:msanchezgrice/spendagent init   --repo .
+npx -y github:msanchezgrice/spendagent doctor --repo .</span>
 
-  <span class="k">npx -y github:msanchezgrice/spendagent init</span>   <span class="c">--repo .</span>
-  <span class="k">npx -y github:msanchezgrice/spendagent doctor</span> <span class="c">--repo .</span>
+If a <code>usage.csv</code> exists, also run:
 
-<span class="c"># If I have a usage export (OpenAI console / Anthropic / LiteLLM),
-# also run:</span>
+<span class="cmd-block">npx -y github:msanchezgrice/spendagent doctor --repo . --usage ./usage.csv</span>
 
-  <span class="k">npx -y github:msanchezgrice/spendagent doctor</span> <span class="c">--repo . --usage ./usage.csv</span>
+Then read <code>.agentspend/AGENT_SPEND_REPORT.md</code> and give me:
 
-Then read <span class="s">.agentspend/AGENT_SPEND_REPORT.md</span> and summarize the
-top three savings opportunities. For each one give me:
+  1. the three findings with the highest estimated savings
+  2. for each: file + line, current model, cheapest safe alternative
+  3. the smallest safe patch I can ship today for the top one
 
-  1. which file + line to change
-  2. the estimated monthly saving range
-  3. the smallest safe patch I can ship today
-
-Do not upload the repo or the usage file anywhere. Local only.</pre>
-        <button class="prompt-copy" data-copy-target="hero">Copy</button>
+Do not upload the repo or the usage file anywhere. Local only.</div>
+        <button class="prompt-copy" data-copy-target="hero">Copy prompt</button>
       </div>
-      <p style="margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.08em;color:var(--ink-faded);">
-        Prefer the terminal? Just run the two <code class="mono" style="color:var(--ink);">npx</code> lines yourself. The rest of the block is instructions for the agent to read.
-      </p>
+
+      <!-- Or if you just want to run it yourself, this is the shell-safe line -->
+      <div class="shell-shortcut reveal" id="shell-shortcut">
+        <div class="shell-shortcut-label">No agent?<br/>Paste in terminal.</div>
+        <div class="shell-shortcut-cmd"><span class="prompt">$</span><span data-copy="shell">npx -y github:msanchezgrice/spendagent doctor --repo .</span></div>
+        <button class="shell-shortcut-copy" data-copy-target="shell">Copy command</button>
+      </div>
     </div>
   </section>
 

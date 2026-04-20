@@ -6,7 +6,8 @@ AgentSpend scans your repo for LLM/API usage (OpenAI, Anthropic, Gemini, LiteLLM
 
 **Local-only by default.** AgentSpend never uploads code, prompts, or usage data.
 
-Landing page: see [`landing/`](./landing/) (deployable to Vercel/Netlify as-is).
+- Website: [agentspend.vercel.app](https://agentspend.vercel.app)
+- Source: [`landing/`](./landing/) (deployable to Vercel/Netlify as-is)
 
 ---
 
