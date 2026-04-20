@@ -287,6 +287,9 @@ function findingForNoCache(
     : 0;
   const baseline = callsiteCost > 0 ? callsiteCost : syntheticCost;
   const savings = baseline * 0.25;
+  // If we have no baseline (dynamic model + no usage), report a qualitative
+  // finding without an invented dollar figure.
+  const hasCost = baseline > 0;
 
   return {
     id: "pending",
@@ -294,11 +297,11 @@ function findingForNoCache(
     summary: `${cs.file}:${cs.line} makes a ${cs.task_hint} call with no visible cache layer. Deterministic or repeated inputs are likely being recomputed.`,
     category: "prompt_caching",
     severity: baseline > 100 ? "medium" : "low",
-    current_monthly_cost_usd: round2(baseline),
-    projected_monthly_cost_usd: round2(baseline - savings),
-    estimated_monthly_savings_usd: round2(savings),
-    savings_low_usd: round2(savings * 0.4),
-    savings_high_usd: round2(savings * 1.5),
+    current_monthly_cost_usd: hasCost ? round2(baseline) : undefined,
+    projected_monthly_cost_usd: hasCost ? round2(baseline - savings) : undefined,
+    estimated_monthly_savings_usd: hasCost ? round2(savings) : undefined,
+    savings_low_usd: hasCost ? round2(savings * 0.4) : undefined,
+    savings_high_usd: hasCost ? round2(savings * 1.5) : undefined,
     savings_confidence: callsiteCost > 0 ? "medium" : "low",
     implementation_effort: "hours",
     implementation_risk: "low",

@@ -12,27 +12,35 @@ Landing page: see [`landing/`](./landing/) (deployable to Vercel/Netlify as-is).
 
 ## For your coding agent (fastest path)
 
-Paste this into Claude Code, Cursor, Codex, OpenCode, or any shell-capable coding agent:
+> **Paste the block below into the chat box of a coding agent (Claude Code, Cursor, Codex, OpenCode, Aider, Continue, etc.) — not into your terminal.** The block contains natural-language instructions the agent reads, plus the shell commands the agent will run on your behalf.
 
 ```text
 Audit this repo for AI / API cost waste.
 
-Run:
+Run these two commands in the project root:
   npx -y github:msanchezgrice/spendagent init --repo .
   npx -y github:msanchezgrice/spendagent doctor --repo .
 
-If I have a usage.csv, also run:
+If a usage.csv exists, also run:
   npx -y github:msanchezgrice/spendagent doctor --repo . --usage ./usage.csv
 
 Then read .agentspend/AGENT_SPEND_REPORT.md and give me:
   1. the three findings with the highest estimated savings
   2. for each: file + line, current model, cheapest safe alternative
-  3. the smallest patch I can ship today for the top one
+  3. the smallest safe patch I can ship today for the top one
 
 Do not upload the repo or usage data anywhere. Local only.
 ```
 
 `npx -y github:msanchezgrice/spendagent` clones this repo, triggers `npm run build` automatically via the `prepare` hook, and runs the CLI. First run takes ~20s.
+
+### If you just want to run it in your terminal (no agent)
+
+```bash
+npx -y github:msanchezgrice/spendagent init   --repo .
+npx -y github:msanchezgrice/spendagent doctor --repo .
+open .agentspend/AGENT_SPEND_REPORT.md
+```
 
 ---
 

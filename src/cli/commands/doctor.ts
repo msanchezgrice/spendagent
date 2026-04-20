@@ -74,7 +74,8 @@ export async function runDoctor(opts: DoctorOptions): Promise<AnalysisResult> {
     log.raw(chalk.bold(`Top ${top.length} finding${top.length === 1 ? "" : "s"}:`));
     for (const f of top) {
       const save =
-        f.estimated_monthly_savings_usd && f.estimated_monthly_savings_usd > 0
+        f.estimated_monthly_savings_usd !== undefined &&
+        f.estimated_monthly_savings_usd > 0
           ? ` — saves ~${fmtUsd(f.estimated_monthly_savings_usd)}/mo`
           : "";
       log.raw(`  ${f.id} ${f.title}${chalk.green(save)}`);

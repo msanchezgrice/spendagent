@@ -705,7 +705,7 @@
       <!-- Copy-paste prompt card -->
       <div class="prompt-card reveal" id="hero-prompt">
         <div class="prompt-head">
-          <span>PASTE INTO CLAUDE CODE · CURSOR · CODEX · OR ANY CODING AGENT</span>
+          <span>PASTE INTO THE CHAT BOX OF A CODING AGENT — NOT YOUR SHELL</span>
           <span class="dots" aria-hidden="true"><span></span><span></span><span></span></span>
         </div>
 <pre class="prompt-body" data-copy="hero"><span class="c"># Audit this repository for AI / API cost waste.</span>
@@ -730,6 +730,9 @@ top three savings opportunities. For each one give me:
 Do not upload the repo or the usage file anywhere. Local only.</pre>
         <button class="prompt-copy" data-copy-target="hero">Copy</button>
       </div>
+      <p style="margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.08em;color:var(--ink-faded);">
+        Prefer the terminal? Just run the two <code class="mono" style="color:var(--ink);">npx</code> lines yourself. The rest of the block is instructions for the agent to read.
+      </p>
     </div>
   </section>
 
@@ -971,9 +974,9 @@ Patch plan:
         <!-- AGENT PROMPT -->
         <div class="install-card reveal">
           <h3>For your coding agent</h3>
-          <p class="lede">Paste this into Claude Code, Cursor, Codex, OpenCode, or any agent that can run shell commands. It will install, audit, and summarize without leaving your terminal.</p>
+          <p class="lede">Paste this into the chat box of a coding agent — <strong>not your shell</strong>. The agent reads the instructions and runs the <code class="mono">npx</code> commands for you.</p>
 
-          <div class="codebox-label">COPY &rarr; PASTE</div>
+          <div class="codebox-label">COPY &rarr; PASTE INTO AGENT CHAT</div>
           <div class="codebox">
             <button class="copybtn" data-copy-target="agent">Copy</button>
 <pre data-copy="agent"><span class="c"># Audit this repo for AI / API cost waste.</span>

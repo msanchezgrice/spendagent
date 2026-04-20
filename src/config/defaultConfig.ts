@@ -22,18 +22,28 @@ export const DEFAULT_CONFIG: AgentSpendConfig = {
       "prompts/**",
     ],
     exclude: [
-      "node_modules/**",
-      ".git/**",
-      "dist/**",
-      "build/**",
-      ".next/**",
-      "coverage/**",
-      "venv/**",
-      ".venv/**",
-      "__pycache__/**",
-      ".agentspend/**",
+      "**/node_modules/**",
+      "**/.git/**",
+      "**/dist/**",
+      "**/build/**",
+      "**/out/**",
+      "**/.next/**",
+      "**/.nuxt/**",
+      "**/.output/**",
+      "**/.turbo/**",
+      "**/.vercel/**",
+      "**/.svelte-kit/**",
+      "**/coverage/**",
+      "**/venv/**",
+      "**/.venv/**",
+      "**/env/**",
+      "**/__pycache__/**",
+      "**/.agentspend/**",
       "**/*.min.js",
+      "**/*.bundle.js",
+      "**/*.chunk.js",
       "**/*.map",
+      "**/*.d.ts",
     ],
   },
   analysis: {
@@ -76,18 +86,28 @@ repo:
     - "**/claude_desktop_config.json"
     - "prompts/**"
   exclude:
-    - "node_modules/**"
-    - ".git/**"
-    - "dist/**"
-    - "build/**"
-    - ".next/**"
-    - "coverage/**"
-    - "venv/**"
-    - ".venv/**"
-    - "__pycache__/**"
-    - ".agentspend/**"
+    - "**/node_modules/**"
+    - "**/.git/**"
+    - "**/dist/**"
+    - "**/build/**"
+    - "**/out/**"
+    - "**/.next/**"
+    - "**/.nuxt/**"
+    - "**/.output/**"
+    - "**/.turbo/**"
+    - "**/.vercel/**"
+    - "**/.svelte-kit/**"
+    - "**/coverage/**"
+    - "**/venv/**"
+    - "**/.venv/**"
+    - "**/env/**"
+    - "**/__pycache__/**"
+    - "**/.agentspend/**"
     - "**/*.min.js"
+    - "**/*.bundle.js"
+    - "**/*.chunk.js"
     - "**/*.map"
+    - "**/*.d.ts"
 
 analysis:
   monthly_request_default: 10000
